@@ -1,0 +1,72 @@
+This is the README file for mbench, a program for benchmarking
+common mathematical functions from the C math library.
+
+  Copyright (C) 2020 James D. Trotter
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+Building
+--------
+The `mbench' program can be built with `make'. Compilation and linking
+may be configured through the environment variables `CC', `CFLAGS' and
+`LDFLAGS', which are used to choose a compiler, set compiler flags and
+set linker flags, respectively. Here is an example:
+
+     make CC=gcc CFLAGS="-O3 -march=native" LDFLAGS="-lm"
+
+Support for the GNU MPFR Library (https://www.mpfr.org/) is enabled by
+adding `-DHAVE_MPFR' to `CFLAGS' and setting the appropriate linker
+flags to link with the library, such as adding `-lmpfr' to `LDFLAGS'.
+
+
+Usage
+-----
+The `mbench' program is used to benchmark common mathematical
+functions from the C math library, including trigonometric,
+hyperbolic, exponential and logarithmic functions, as well as power,
+error and gamma functions.
+
+One of the above-mentioned mathematical functions is specified, and a
+list of whitespace-separated numerical values are read from a file or
+standard input. The result of applying the specified mathematical
+function to the given numerical values is calculated, and the time
+taken and performance are displayed.
+
+Here is an example:
+
+     $ echo '1.0 2.0 3.0 4.0 5.0' >in.txt
+     $ ./mbench --op=exp --verbose in.txt
+     exp: 0.000031 seconds 1 repetitions 5 ops 0.156700 Mops/s exceptions: none
+     2.718281 7.389056 20.085536 54.598150 148.413159
+
+If the option `--verbose' is supplied, as above, then the computed
+results are also printed.
+
+OpenMP can be used for shared-memory parallel computations, in which
+case the environment variable `OMP_NUM_THREADS' controls the number of
+threads that are used. In addition, `OMP_PROC_BIND' can be set to bind
+threads to particular cores.
+
+If support for the GNU MPFR Library is enabled, then MPFR is used to
+compute a reference result with high precision and correct rounding.
+This reference is used to calculate the maximum error of the function
+from the C math library implementation for the specified input values,
+as in the following example:
+
+     $ make CC=gcc-10.1 CFLAGS="-O3 -fopenmp -ffast-math -march=native -mprefer-vector-width=512 -DHAVE_MPFR" LDFLAGS="-lm -lmpfr"
+     (...)
+     $ OMP_NUM_THREADS=1 OMP_PROC_BIND=true ./mbench --op=exp --repeat=1000 random.txt
+     exp: 0.030661 seconds 1000 repetitions 32768000 ops 1068.689871 Mops/s exceptions: disabled absolute error: 1.953992e-14 relative error: 7.404355e-15 (exceptions: inexact)
+
+The file `random.txt' contains 32768 random numbers in the range [0,1]
+and the benchmark is repeated 1000 times. Floating-point exceptions
+are disabled as a result of the option `-ffast-math'. The options
+`-march=native' and `-mprefer-vector-width=512' are in this case used
+to enable AVX512 vectorisation on a CPU that supports it. Ultimately,
+the error is estimated at about 2*10^-14 and 7*10^-15.
+
+Copying
+-------
+mbench is free software. See the file COPYING for copying conditions.
